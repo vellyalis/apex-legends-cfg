@@ -1,7 +1,7 @@
 # apex-legends-cfg — Apex Legends 実測ベース設定ファイル
 
 Apex Legends の実行ファイル（`r5apex_dx12.exe`）を静的解析して作った設定集です。
-「このビルドの機械語が実際に値を読む」ことを確認できた項目だけを使い、全行に **既定値 / 意味 / 副作用** のコメントを付けています。
+「このビルドの機械語が実際に値を読む」ことを確認できた項目（`[E]`）を基本に、UIスクリプト側が読む少数の項目（`[S]`）を含み、全行に **既定値 / 意味 / 副作用** のコメントを付けています。読み手が確認できていない値（`[未]`）はコメントアウトしています。
 
 - 対象: `v3.0.1.28` / build `R5pc_r5-301_J28_CL11570498`
 - EXE: `r5apex_dx12.exe` sha256 `8bacf98c9409352b198ece7800a09141585a95eaf6f9dc003c0f6c1114ca3825`
@@ -40,7 +40,7 @@ Apex Legends の実行ファイル（`r5apex_dx12.exe`）を静的解析して�
 
 | 対象 | 戻し方 |
 |---|---|
-| autoexec | ファイルを消す（または起動オプションから `+exec autoexec.cfg` を外す）。値はゲーム側に保存されないので、次回起動から元に戻る |
+| autoexec | ファイルを消す（または起動オプションから `+exec autoexec.cfg` を外す）→ 次回起動から読まれなくなる。ただし一部の値はゲーム側の設定ファイルに保存され得る（台帳の `ARCHIVE` 印）。残っていたらゲーム内設定で戻すか、該当ファイルからその行を消す |
 | autoexec（旧ファイルに戻す） | 退避した `autoexec.cfg.bak-*` を `autoexec.cfg` にリネームして戻す（読み取り専用属性は `attrib -R` で外す） |
 | videoconfig | `attrib -R videoconfig.txt` → 退避したファイルを上書きコピーする。または消して起動（ゲームが既定値で作り直す） |
 | pad-fix | `python pad_fix.py --restore`（初回 `--apply` 前の状態に戻る。ロックも外れる） |
@@ -83,7 +83,7 @@ Apex Legends の実行ファイル（`r5apex_dx12.exe`）を静的解析して�
 ## English summary
 
 Static-analysis-derived Apex Legends configs. Every line is grounded in the actual
-`r5apex_dx12.exe` binary (v3.0.1.28): only cvars read by native code are used. Video values live in
+`r5apex_dx12.exe` binary (v3.0.1.28): cvars read by native code (plus a few UI-script-side ones) are used. Video values live in
 `configs/videoconfig.txt`; general cvars in the three autoexec variants; `pad-fix/` stops gamepad
 settings from leaking into mouse aim. Tournament (ALGS) use is restricted — see the rules section.
 

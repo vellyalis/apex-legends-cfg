@@ -341,7 +341,8 @@ def main():
                      f'//  {s}\n'
                      f'// ---------------------------------------------------------------------------\n')
             for name, val, tag, meta, comment in sec[s]:
-                fh.write(f'{name} "{val}"'.ljust(52) + f'// {tag} {comment}')
+                lead = '// [読み手未確認のため無効] ' if tag in ('[-]', '[E?]') else ''
+                fh.write(lead + f'{name} "{val}"'.ljust(52) + f'// {tag} {comment}')
                 if meta:
                     fh.write(f'   [{meta}]')
                 fh.write('\n')

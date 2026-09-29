@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Generate the documented videoconfig.txt + VIDEOCONFIG-GUIDE.md.
 
-- 現行値をライブファイルから読み、exe 内の `setting.*` 文字列（=正規キー46本）と突合
-- 各キーに「既定/現行/推奨/意味/副作用」コメントを付けて出力
+- 元の値値をライブファイルから読み、exe 内の `setting.*` 文字列（=正規キー46本）と突合
+- 各キーに「既定/元の値/推奨/意味/副作用」コメントを付けて出力
 - 全キーがexe上に実在することを機械検証してから書き出す
 
 Usage: python mk_documented_videoconfig.py <exe> <ledger> <live-videoconfig> <out-dir>
@@ -15,7 +15,7 @@ from cvar_registry import PE  # noqa: E402
 KEY_RE = re.compile(rb'setting\.[A-Za-z][A-Za-z0-9_]{2,40}\x00')
 VAL_RE = re.compile(r'\s*"setting\.([A-Za-z0-9_]+)"\s*"([^"]*)"')
 
-# key -> (推奨値 or None=現行維持, グループ, コメント)
+# key -> (推奨値 or None=元の値維持, グループ, コメント)
 T = {
  'last_display_width':   (None, 'display', '内部値: 直近の画面幅。ゲームが書く。触らない'),
  'last_display_height':  (None, 'display', '内部値: 直近の画面高。触らない'),
@@ -26,54 +26,54 @@ T = {
  'configversion':        (None, 'display', 'videoconfigの形式バージョン。絶対に触らない'),
  'sound_volume':         (None, 'audio',   '音量。既定1.0。足音は視認性と同じ「情報」なので下げない'),
 
- 'stream_memory':        ('3000000', 'visibility', '★推奨値（既定298000）: テクスチャストリーミング予算(KB)。**2〜3GBがスイートスポット**（4GB以上は負荷が増えやすい。増やすなら1段ずつ検証）。上げる=遠くのテクスチャが鮮明／下げる=軽いがボケる（スタールはフレームタイム＝AIM感に効く）'),
- 'r_lod_switch_scale':   ('1.000000', 'visibility', '★推奨変更（現行0.600000/既定1）: 遠距離モデルのLOD切替距離。1.0=既定で遠くまで高精度モデル。0.6=早く低ポリに落ちる（敵の見分けが悪化）。1超でさらに遠くまで高精度（負荷増）'),
+ 'stream_memory':        ('3000000', 'visibility', 'この配布は3GB(3000000)を採用（既定298000）。上げる=遠くのテクスチャが鮮明／下げる=軽いがボケる。負荷（VRAM消費・ストリーミングのスタール）も増えるので**1段ずつ試して決める**（ストールはフレームタイム＝AIM感に効く）'),
+ 'r_lod_switch_scale':   ('1.000000', 'visibility', '★推奨変更（元の値0.600000/既定1）: 遠距離モデルのLOD切替距離。1.0=既定で遠くまで高精度モデル。0.6=早く低ポリに落ちる（敵の見分けが悪化）。1超でさらに遠くまで高精度（負荷増）'),
  'mat_forceaniso':       ('4', 'visual', '異方性フィルタ。**推奨帯は2〜4x**（既定2。好みで16xまで、負荷は軽微）。斜め視点の床・壁のボケが減る＝遠くの輪郭が読みやすい'),
- 'ssao_enabled':         ('0', 'visibility', '★推奨追加（既定1・現行ファイルに無し=既定1）: 環境遮蔽。切ると暗部の「黒潰れ/エッジの暗がり」が減り、暗所の敵が見やすい。メニュー「アンビエントオクルージョン」相当'),
- 'ssao_quality':         (None, 'visibility', 'AOの品質。既定3 / 現行0（最も軽い側）。ssao_enabled=0なら無関係'),
- 'gamma':                (None, 'visibility', '画面の明るさ（メニュー「明るさ」スライダー相当。現行0.700000）。暗所を明るくしたい場合はメニューで上げるのが安全（ここを直接いじると読み取り専用化と衝突しやすい）'),
+ 'ssao_enabled':         ('0', 'visibility', '★推奨追加（既定1・元の値なし=既定1）: 環境遮蔽。切ると暗部の「黒潰れ/エッジの暗がり」が減り、暗所の敵が見やすい。メニュー「アンビエントオクルージョン」相当'),
+ 'ssao_quality':         (None, 'visibility', 'AOの品質。既定3 / 元の値0（最も軽い側）。ssao_enabled=0なら無関係'),
+ 'gamma':                (None, 'visibility', '画面の明るさ（メニュー「明るさ」スライダー相当。元の値0.700000）。暗所を明るくしたい場合はメニューで上げるのが安全（ここを直接いじると読み取り専用化と衝突しやすい）'),
 
  'mat_picmip':           (None, 'visual', 'テクスチャ解像度。既定0(=最高)。0のまま推奨（上げると全テクスチャが荒くなる）'),
  'mat_mip_linear':       (None, 'visual', 'ミップマップ補間。既定1。触らない'),
- 'mat_antialias_mode':   (None, 'visual', '0=アンチエイリアス無し / 1=TSAA。現行0。オフ=輪郭がシャープ（敵の輪郭が締まる）が、ギザつき(ジャギ)は増える。負荷は軽くなる'),
- 'mat_vsync_mode':       (None, 'visual', '0=VSyncオフ。360Hz+VRRならオフ推奨（現行0のまま）'),
- 'mat_backbuffer_count': (None, 'visual', '背面バッファ枚数。現行1（最小遅延側）。メニュー外。1のままでよい'),
- 'fadeDistScale':        (None, 'visual', 'オブジェクトのフェード距離スケール。既定1.0。「1未満=遠くの物が早く消える(軽い/見えにくい)」。現行1.0のまま'),
- 'map_detail_level':     (None, 'visual', 'マップ詳細レベル（意味未特定・既定不明）。現行1のまま触らない'),
- 'new_shadow_settings':  (None, 'visual', '新シャドウ経路の切替フラグ（内部）。現行1のまま'),
- 'dynamic_streaming_budget': (None, 'visual', '動的ストリーミング予算（内部フラグ・既定不明）。現行1のまま'),
+ 'mat_antialias_mode':   (None, 'visual', '0=アンチエイリアス無し / 1=TSAA。元の値0。オフ=輪郭がシャープ（敵の輪郭が締まる）が、ギザつき(ジャギ)は増える。負荷は軽くなる'),
+ 'mat_vsync_mode':       (None, 'visual', '0=VSyncオフ。360Hz+VRRならオフ推奨（元の値0のまま）'),
+ 'mat_backbuffer_count': (None, 'visual', '背面バッファ枚数。元の値1（最小遅延側）。メニュー外。1のままでよい'),
+ 'fadeDistScale':        (None, 'visual', 'オブジェクトのフェード距離スケール。既定1.0。「1未満=遠くの物が早く消える(軽い/見えにくい)」。元の値1.0のまま'),
+ 'map_detail_level':     (None, 'visual', 'マップ詳細レベル（意味未特定・既定不明）。元の値1のまま触らない'),
+ 'new_shadow_settings':  (None, 'visual', '新シャドウ経路の切替フラグ（内部）。元の値1のまま'),
+ 'dynamic_streaming_budget': (None, 'visual', '動的ストリーミング予算（内部フラグ・既定不明）。元の値1のまま'),
 
- 'csm_enabled':          (None, 'shadow', 'キャラクター影(CSM)。既定1 / 現行0。0=キャラ影なし=敵の輪郭が黒フチで浮かず地形に溶ける…のを避けたい人は1、軽さ優先なら0。※ALGSで明示的に許可されていた値'),
- 'csm_coverage':         (None, 'shadow', '影のカバレッジ。既定2 / 現行1（狭い=高解像度側）。csm_enabled=0なら無関係'),
- 'csm_cascade_res':      (None, 'shadow', '影の解像度。既定1024 / 現行512（軽い側）。csm_enabled=0なら無関係'),
- 'shadow_enable':        (None, 'shadow', '動的スポット影。既定1 / 現行0（オフ=負荷減・暗部のムラ減。視認性は微プラス）'),
- 'shadow_depth_dimen_min': (None, 'shadow', '影マップの最小解像度。既定192 / 現行0。shadow_enable=0なら無関係'),
- 'shadow_depth_upres_factor_max': (None, 'shadow', '影マップの最大アップレゾ係数。既定2 / 現行0'),
- 'shadow_maxdynamic':    (None, 'shadow', '動的影の最大数。既定4 / 現行0（0=動的影なし）'),
+ 'csm_enabled':          (None, 'shadow', 'キャラクター影(CSM)。既定1 / 元の値0。0=キャラ影なし=敵の輪郭が黒フチで浮かず地形に溶ける…のを避けたい人は1、軽さ優先なら0。※ALGSで明示的に許可されていた値'),
+ 'csm_coverage':         (None, 'shadow', '影のカバレッジ。既定2 / 元の値1（狭い=高解像度側）。csm_enabled=0なら無関係'),
+ 'csm_cascade_res':      (None, 'shadow', '影の解像度。既定1024 / 元の値512（軽い側）。csm_enabled=0なら無関係'),
+ 'shadow_enable':        (None, 'shadow', '動的スポット影。既定1 / 元の値0（オフ=負荷減・暗部のムラ減。視認性は微プラス）'),
+ 'shadow_depth_dimen_min': (None, 'shadow', '影マップの最小解像度。既定192 / 元の値0。shadow_enable=0なら無関係'),
+ 'shadow_depth_upres_factor_max': (None, 'shadow', '影マップの最大アップレゾ係数。既定2 / 元の値0'),
+ 'shadow_maxdynamic':    (None, 'shadow', '動的影の最大数。既定4 / 元の値0（0=動的影なし）'),
 
- 'volumetric_lighting':  (None, 'glare', '体積光。既定はOFF以外/現行0。0=光の筋(グレア)が消えて見やすい（cvar r_volumetric_lighting_enabled と同系統）'),
- 'volumetric_fog':       (None, 'glare', '体積フォグ。現行0。0=霧状の光の滲みが消える（視認性プラス・負荷減）'),
+ 'volumetric_lighting':  (None, 'glare', '体積光。既定はOFF以外/元の値0。0=光の筋(グレア)が消えて見やすい（cvar r_volumetric_lighting_enabled と同系統）'),
+ 'volumetric_fog':       (None, 'glare', '体積フォグ。元の値0。0=霧状の光の滲みが消える（視認性プラス・負荷減）'),
 
- 'particle_cpu_level':   (None, 'effects', 'エフェクト(粒子)のCPU負荷レベル。既定0 / 現行0。プリセット依存。0のまま'),
- 'cl_particle_fallback_base': (None, 'effects', '粒子の自動間引き(base)。既定0 / 現行3（プリセット由来）。方向性が非公開のため触らない'),
- 'cl_particle_fallback_multiplier': (None, 'effects', '粒子の自動間引き(multiplier)。既定1 / 現行2。触らない'),
+ 'particle_cpu_level':   (None, 'effects', 'エフェクト(粒子)のCPU負荷レベル。既定0 / 元の値0。プリセット依存。0のまま'),
+ 'cl_particle_fallback_base': (None, 'effects', '粒子の自動間引き(base)。既定0 / 元の値3（プリセット由来）。方向性が非公開のため触らない'),
+ 'cl_particle_fallback_multiplier': (None, 'effects', '粒子の自動間引き(multiplier)。既定1 / 元の値2。触らない'),
 
  'r_decals':             ('128', 'decals', '弾痕/デカールの上限。既定256。★128=命中確認の視覚情報（弾痕/血）を残しつつ軽い。0にすると消える（負荷は最小）'),
- 'r_createmodeldecals':  (None, 'decals', 'モデルへのデカール(血/弾痕)生成。既定1 / 現行0。同上のトレードオフ'),
+ 'r_createmodeldecals':  (None, 'decals', 'モデルへのデカール(血/弾痕)生成。既定1 / 元の値0。同上のトレードオフ'),
 
- 'cl_gib_allow':         (None, 'gore', 'ギブ(肉片)表示。既定1 / 現行0。0=撃破時の肉片が飛ばない（視界のノイズ減・負荷減）'),
- 'cl_ragdoll_maxcount':  (None, 'gore', '死体(ラグドール)数。既定8 / 現行0（0=死体なし。視界がクリア・負荷減）'),
+ 'cl_gib_allow':         (None, 'gore', 'ギブ(肉片)表示。既定1 / 元の値0。0=撃破時の肉片が飛ばない（視界のノイズ減・負荷減）'),
+ 'cl_ragdoll_maxcount':  (None, 'gore', '死体(ラグドール)数。既定8 / 元の値0（0=死体なし。視界がクリア・負荷減）'),
  'cl_ragdoll_self_collision': ('0', 'gore', '死体の自己衝突。既定1。★0（死体を出さない設定なので実質無関係だが明示）'),
 
- 'dvs_enable':           (None, 'perf', '動的解像度(アダプティブリゾリューション)。既定1 / 現行0。0=常に固定解像度（解像度が勝手に下がってボケるのを防ぐ）。視認性目的なら0推奨のまま'),
- 'dvs_gpuframetime_min': (None, 'perf', '動的解像度の下限フレームタイム(µs)。既定15000 / 現行15000。dvs_enable=0なら無関係'),
- 'dvs_gpuframetime_max': (None, 'perf', '上限側。既定16500 / 現行16500。同上'),
+ 'dvs_enable':           (None, 'perf', '動的解像度(アダプティブリゾリューション)。既定1 / 元の値0。0=常に固定解像度（解像度が勝手に下がってボケるのを防ぐ）。視認性目的なら0推奨のまま'),
+ 'dvs_gpuframetime_min': (None, 'perf', '動的解像度の下限フレームタイム(µs)。既定15000 / 元の値15000。dvs_enable=0なら無関係'),
+ 'dvs_gpuframetime_max': (None, 'perf', '上限側。既定16500 / 元の値16500。同上'),
 }
 
 NOT_WRITTEN = {
  'cl_fovScale': 'FOV。profile.cfg の cl_fovScale が正なので、ここには書かない（二重管理になると読み取り専用化した時にFOVを固定してしまう）',
  'set_dress_level': 'exe内に文字列はあるが意味未特定・ゲームは書かない。触らない',
- 'ssao_downsample': 'AOのダウンサンプル段数。既定/範囲が静的に未確定で現行ファイルにも無いため収録しない（ssao_enabled=0なら無関係）',
+ 'ssao_downsample': 'AOのダウンサンプル段数。既定/範囲が静的に未確定で元の値ファイルにも無いため収録しない（ssao_enabled=0なら無関係）',
 }
 
 
@@ -100,7 +100,7 @@ def main():
         if m:
             cur['setting.' + m.group(1)] = m.group(2)
 
-    # 出力キー = テーブル + 現行ファイルにあるがテーブル外のもの（未記載はエラーにする）
+    # 出力キー = テーブル + 元の値ファイルにあるがテーブル外のもの（未記載はエラーにする）
     unknown = [k for k in cur if k.split('.', 1)[1] not in T]
     assert not unknown, f'テーブル未定義のキー: {unknown}'
     keys = ['setting.' + n for n in T]
@@ -130,7 +130,7 @@ def main():
              '\t//    （戻さないとゲームが終了時にメニュー値で書き戻し、コメントも消える）',
              '\t// 5) 数値の意味・既定値は各項目の上のコメント行に書いてある',
              '\t//   ※映像の個別設定はこのファイルが管理元（autoexec.cfg には重複して書いていない）',
-             '\t// 凡例: ★=推奨値の指定あり（現行と同じ値の場合もある。理由はコメント参照）/ 既定=エンジン・メニュー基準値 / 元ファイル=この配布を作る際の元ファイルの値',
+             '\t// 凡例: ★=推奨値の指定あり（元の値と同じ値の場合もある。理由はコメント参照）/ 既定=エンジン・メニュー基準値 / 元ファイル=この配布を作る際の元ファイルの値',
              '']
     for g in order:
         gk = [k for k in keys if T[k.split('.', 1)[1]][1] == g]

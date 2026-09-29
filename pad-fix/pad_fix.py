@@ -44,13 +44,18 @@ SETTINGS_ITEMS = {'joystick': '0', 'disable_mouselook': '0'}
 def set_lock(path, locked):
     attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
     if attrs == 0xFFFFFFFF:
-        raise OSError('ファイルが見つからない: %s' % path)
-    ctypes.windll.kernel32.SetFileAttributesW(
-        path, (attrs | READONLY) if locked else (attrs & ~READONLY))
+        raise OSError('ファイルが見つからない/属性を読めない: %s' % path)
+    want = (attrs | READONLY) if locked else (attrs & ~READONLY)
+    if not ctypes.windll.kernel32.SetFileAttributesW(path, want):
+        raise OSError('属性を変更できなかった: %s' % path)
 
 
 def is_locked(path):
-    return bool(ctypes.windll.kernel32.GetFileAttributesW(path) & READONLY)
+    """True/False、取得できなければ None"""
+    attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
+    if attrs == 0xFFFFFFFF:
+        return None
+    return bool(attrs & READONLY)
 
 
 def parse(line):
@@ -135,10 +140,12 @@ def main():
             print('ロック解除: %s' % path)
         return 0
 
-    if mode == '--apply' and len(files) < 2:
-        print('ERROR: profile.cfg と settings.cfg の両方が必要（片方しか見つからない）。')
-        print('       Apex を一度起動して設定ファイルを作ってから実行する。')
-        return 2
+    if mode == '--apply':
+        have = {os.path.basename(path) for path, _ in files}
+        if have != {'profile.cfg', 'settings.cfg'}:
+            print('ERROR: profile.cfg と settings.cfg の両方が必要（見つかったのは: %s）' % sorted(have or ['なし']))
+            print('       Apex を一度起動して設定ファイルを作ってから実行する。')
+            return 2
 
     total = 0
     failed = False
@@ -155,11 +162,12 @@ def main():
                 with open(path, 'w', encoding='utf-8', newline='\r\n') as handle:
                     handle.write('\n'.join(lines) + '\n')
             set_lock(path, True)
-            if not is_locked(path):
-                print('  → ERROR: 読み取り専用にできなかった（権限を確認）: %s' % path)
-                failed = True
-            else:
+            state = is_locked(path)
+            if state is True:
                 print('  → ロック適用: %s' % path)
+            else:
+                print('  → ERROR: 読み取り専用にできなかった/属性を確認できない（権限を確認）: %s' % path)
+                failed = True
     print('合計 %d 項目（%s）' % (total, 'DRY RUN' if mode == '--dry' else mode))
     if mode == '--dry':
         print('※ 適用するには --apply（ゲームを終了してから）')
