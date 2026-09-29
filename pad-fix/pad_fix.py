@@ -18,13 +18,22 @@
 """
 import ctypes
 import glob
+import json
 import os
 import shutil
 import sys
 import time
 
 SAVED = os.path.join(os.environ.get('USERPROFILE', ''), 'Saved Games', 'Respawn', 'Apex')
+# GetFileAttributesW は失敗時に -1 を返す。既定の restype(int) では 0xFFFFFFFF と比較できないため明示する
+_k32 = ctypes.windll.kernel32
+_k32.GetFileAttributesW.restype = ctypes.c_uint32
+_k32.GetFileAttributesW.argtypes = [ctypes.c_wchar_p]
+_k32.SetFileAttributesW.restype = ctypes.c_int
+_k32.SetFileAttributesW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32]
+INVALID = 0xFFFFFFFF
 BACKUP = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backup')
+MANIFEST = os.path.join(BACKUP, 'manifest.json')
 READONLY = 0x01
 
 SCALARS = {f'gamepad_ads_advanced_sensitivity_scalar_{i}': '0.2' for i in range(8)}
@@ -42,18 +51,18 @@ SETTINGS_ITEMS = {'joystick': '0', 'disable_mouselook': '0'}
 
 
 def set_lock(path, locked):
-    attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
-    if attrs == 0xFFFFFFFF:
+    attrs = _k32.GetFileAttributesW(path)
+    if attrs == INVALID:
         raise OSError('ファイルが見つからない/属性を読めない: %s' % path)
     want = (attrs | READONLY) if locked else (attrs & ~READONLY)
-    if not ctypes.windll.kernel32.SetFileAttributesW(path, want):
+    if not _k32.SetFileAttributesW(path, want):
         raise OSError('属性を変更できなかった: %s' % path)
 
 
 def is_locked(path):
     """True/False、取得できなければ None"""
-    attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
-    if attrs == 0xFFFFFFFF:
+    attrs = _k32.GetFileAttributesW(path)
+    if attrs == INVALID:
         return None
     return bool(attrs & READONLY)
 
@@ -104,11 +113,34 @@ def targets():
     return out
 
 
+def load_manifest():
+    """[{'backup':名前,'origin':元の絶対パス,'time':記録時刻}] の順序付きリスト"""
+    if not os.path.exists(MANIFEST):
+        return []
+    try:
+        data = json.load(open(MANIFEST, encoding='utf-8'))
+    except ValueError:
+        return []
+    if isinstance(data, dict):          # 旧形式 {backup: origin} をリストへ移行
+        return [{'backup': k, 'origin': v, 'time': 0.0} for k, v in data.items()]
+    return list(data)
+
+
 def backup(path):
     os.makedirs(BACKUP, exist_ok=True)
-    dest = os.path.join(BACKUP, '%s__%s' % (time.strftime('%Y%m%d-%H%M%S'), os.path.basename(path)))
+    stamp = time.strftime('%Y%m%d-%H%M%S')
+    dest = os.path.join(BACKUP, '%s__%s' % (stamp, os.path.basename(path)))
+    n = 1
+    while os.path.exists(dest):          # 同秒・同名でも上書きしない
+        n += 1
+        dest = os.path.join(BACKUP, '%s-%d__%s' % (stamp, n, os.path.basename(path)))
     shutil.copyfile(path, dest)
     set_lock(dest, False)
+    manifest = load_manifest()
+    manifest.append({'backup': os.path.basename(dest), 'origin': os.path.abspath(path),
+                     'time': time.time()})
+    with open(MANIFEST, 'w', encoding='utf-8') as fh:
+        json.dump(manifest, fh, ensure_ascii=False, indent=1)
     return dest
 
 
@@ -119,17 +151,30 @@ def main():
         return 1
 
     if mode == '--restore':
-        earliest = {}
-        for source in sorted(glob.glob(os.path.join(BACKUP, '*.cfg'))):
-            earliest.setdefault(os.path.basename(source).split('__')[-1], source)
+        manifest = load_manifest()
+        oldest = {}
+        for entry in manifest:                            # 記録順=古い順に走査
+            src = os.path.join(BACKUP, entry['backup'])
+            if os.path.exists(src):
+                oldest.setdefault(entry['origin'], src)
+        for source in sorted(glob.glob(os.path.join(BACKUP, '*.cfg'))):   # マニフェスト外の残り
+            name = os.path.basename(source)
+            known = any(e['backup'] == name for e in manifest)
+            if known:
+                continue
+            origin = os.path.join(SAVED, name.split('__', 1)[-1])
+            oldest.setdefault(origin, source)
+        earliest = oldest
         count = 0
-        for target, source in earliest.items():
-            for candidate in glob.glob(os.path.join(SAVED, '**', target), recursive=True):
-                set_lock(candidate, False)
-                shutil.copyfile(source, candidate)
-                set_lock(candidate, False)
-                print('復元(原値): %s <- %s' % (candidate, os.path.basename(source)))
-                count += 1
+        for origin, source in earliest.items():
+            if not os.path.exists(origin):
+                print('スキップ（元ファイルが無い）: %s' % origin)
+                continue
+            set_lock(origin, False)
+            shutil.copyfile(source, origin)
+            set_lock(origin, False)
+            print('復元(原値): %s <- %s' % (origin, os.path.basename(source)))
+            count += 1
         if not count:
             print('バックアップが無い（backup/ が空）')
         return 0 if count else 1
