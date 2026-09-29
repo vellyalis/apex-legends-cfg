@@ -42,7 +42,9 @@ BACKUP = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backup')
 MANIFEST = os.path.join(BACKUP, 'manifest.json')
 READONLY = 0x01
 
-SCALARS = {f'gamepad_ads_advanced_sensitivity_scalar_{i}': '0.2' for i in range(8)}
+# 倍率ごとのADS感度スカラーは「中立値=1.0」にする（ユーザー指示 2026-09-29）
+#  ※ 0.0〜0.1台を書くとゲームが 0.2 にクランプして戻す（実測）。その下限帯は避けて中立を採る
+SCALARS = {f'gamepad_ads_advanced_sensitivity_scalar_{i}': '1.0' for i in range(8)}
 AIM_ASSIST = {name: '0.0' for name in (
     'gamepad_aim_assist_ads_high_power_scopes', 'gamepad_aim_assist_ads_low_power_scopes',
     'gamepad_aim_assist_hip_high_power_scopes', 'gamepad_aim_assist_hip_low_power_scopes',

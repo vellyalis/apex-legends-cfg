@@ -44,16 +44,16 @@ disable_mouselook "0"
 
 ### `profile\profile.cfg`（34項目）
 
-**A. 倍率ごとのADS感度スカラー（8項目）— エンジン下限へ**
+**A. 倍率ごとのADS感度スカラー（8項目）— 中立値(1.0)へ**
 ```
-gamepad_ads_advanced_sensitivity_scalar_0 "0.2"
-gamepad_ads_advanced_sensitivity_scalar_1 "0.2"
-gamepad_ads_advanced_sensitivity_scalar_2 "0.2"
-gamepad_ads_advanced_sensitivity_scalar_3 "0.2"
-gamepad_ads_advanced_sensitivity_scalar_4 "0.2"
-gamepad_ads_advanced_sensitivity_scalar_5 "0.2"
-gamepad_ads_advanced_sensitivity_scalar_6 "0.2"
-gamepad_ads_advanced_sensitivity_scalar_7 "0.2"
+gamepad_ads_advanced_sensitivity_scalar_0 "1.0"
+gamepad_ads_advanced_sensitivity_scalar_1 "1.0"
+gamepad_ads_advanced_sensitivity_scalar_2 "1.0"
+gamepad_ads_advanced_sensitivity_scalar_3 "1.0"
+gamepad_ads_advanced_sensitivity_scalar_4 "1.0"
+gamepad_ads_advanced_sensitivity_scalar_5 "1.0"
+gamepad_ads_advanced_sensitivity_scalar_6 "1.0"
+gamepad_ads_advanced_sensitivity_scalar_7 "1.0"
 ```
 
 **B. アシスト（5項目）— 切る**
@@ -97,14 +97,15 @@ gamepad_custom_deadzone_out "0.02"
 値の根拠: cvar 記述子の min が 0 であること（実測）。上限は未記載の項目があるため、**0 かゲーム既定値のみ**を採用している（範囲外を書かない）。
 **パッドを使わない人向けの設定**です（パッドを使う人は D が効きすぎるので調整してください）。
 
-## 重要: スカラーの下限は 0.2（実測）
+## 倍率スカラーの値について
 
-`gamepad_ads_advanced_sensitivity_scalar_*` に `0.0` を書いても、**ゲームが 0.2 にクランプして戻します**
-（実測: 全8段が 0.2 になった）。正しくは `"0.2"` ＝ **ゲーム内スライダーを全部左端にしたのと同じ値**。
+- 採用値は **`"1.0"`（中立＝ゲーム既定。追加の倍率をかけない）**。ユーザー指示（2026-09-29）による
+- 参考（実測）: `0.0`〜`0.1`台を書いても**ゲームが 0.2 にクランプして戻す**。この下限帯は使わない
+  （ゲーム内スライダーを左端にした状態と同じ値）
 
 ## 反映の確認（起動→終了後に）
 
-- `profile.cfg`: スカラー8個 `0.2` / アシスト5個 `0.0` / **トグル2つが `1`** / ALCの`custom_*`が上記の値 / `joystick 0`・`disable_mouselook 0`
+- `profile.cfg`: スカラー8個 `1.0`（中立） / アシスト5個 `0.0` / **トグル2つが `1`** / ALCの`custom_*`が上記の値 / `joystick 0`・`disable_mouselook 0`
 - `settings.cfg`: `joystick 0` / `disable_mouselook 0`
 - 戻っていたら再適用（`--apply` は読み取り専用ロックも付ける）
 
@@ -153,7 +154,7 @@ python pad_fix.py --unlock
 - マウスの実効感度は**その共有状態から選ばれるテーブル**で決まる（パッド側スカラーと同型の構造）
   → パッド側の値が小さいほど、共有状態に載る量も小さくなる（安全側）
 - 関与するスカラーは「倍率ごとのスカラー」で、**per-scope トグルと ALC 本体の両方が ON のときだけ適用される**
-  → だから「両トグル ON ＋ 値を下限」が最小化になる
+  → だから「両トグル ON ＋ 倍率スカラーは中立、ALC の旋回系は下限」が安全側になる
 
 ## English summary
 
@@ -162,6 +163,6 @@ state the mouse sensitivity computation reads (same input object, gate-free pad 
 The fix below minimizes the gamepad-side values as a safety measure (structural evidence; statistical
 feel-testing is inconclusive).
 Apply the 36 values above — both the per-scope toggle **and** Advanced Look Controls must be ON
-(`gamepad_use_per_scope_sensitivity_scalars "1"`, `gamepad_custom_enabled "1"`), the scalars clamp
-to **0.2** (not 0.0) — then lock both files read-only and re-check after the next launch.
+(`gamepad_use_per_scope_sensitivity_scalars "1"`, `gamepad_custom_enabled "1"`), the per-zoom scalars are set to the neutral **1.0**
+(values below 0.2 are clamped to 0.2 by the engine) — then lock both files read-only and re-check after the next launch.
 `-nojoy` does not help. No game modification, no injection.
