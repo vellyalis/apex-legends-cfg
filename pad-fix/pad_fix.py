@@ -2,8 +2,8 @@
 """pad_fix.py — Apex Legends: パッド設定がマウス感度に混入するのを止める（設定値のみ・注入なし）
 
 やること:
-  profile.cfg の16項目と settings.cfg の2項目を「確定値」に揃え、最後に読み取り専用ロックする。
-  既存行は値を書き換え、無い行は末尾に追記する（＝18項目を必ず保証する）。
+  profile.cfg の34項目と settings.cfg の2項目を「確定値」に揃え、最後に読み取り専用ロックする。
+  既存行は値を書き換え、無い行は末尾に追記する（＝36項目を必ず保証する）。
 
 使い方（ゲームを終了してから実行）:
   python pad_fix.py --dry       変更内容の表示のみ（書き込まない）
@@ -43,10 +43,10 @@ AIM_ASSIST = {name: '0.0' for name in (
     'gamepad_aim_assist_hip_high_power_scopes', 'gamepad_aim_assist_hip_low_power_scopes',
     'gamepad_aim_assist_melee')}
 # 詳細感度(ALC)本体を ON にした上で、パッド側の寄与を最小化する値
-# （レンジは cvar 記述子から実測: custom_* は [0, 既定]、deadzone のみ既定が上限）
+# （記述子の min は 0 と実測。上限は未記載の項目があるため、0 かゲーム既定値のみを採用する）
 ALC_ON = {'gamepad_custom_enabled': '1'}
 ALC_MIN = {
-    'gamepad_custom_curve': '0.0',            # 下限=曲線なし（最も素直）
+    'gamepad_custom_curve': '0.0',            # 記述子の min=0（曲線なし側）
     'gamepad_custom_assist_on': '0',          # ALC側のアシストも切る
     'gamepad_custom_assist_style': '0',
     'gamepad_custom_ads_pitch': '0.0',        # ADS 旋回上限を最小へ
@@ -61,7 +61,7 @@ ALC_MIN = {
     'gamepad_custom_hip_turn_pitch': '0.0',
     'gamepad_custom_hip_turn_time': '0.0',
     'gamepad_custom_hip_turn_yaw': '0.0',
-    'gamepad_custom_deadzone_in': '0.15',     # 既定=上限（遊びを残して微小入力の混入を抑える）
+    'gamepad_custom_deadzone_in': '0.15',     # 既定値のまま（意図: 遊びを残す。効果は未検証）
     'gamepad_custom_deadzone_out': '0.02',
 }
 PROFILE_ITEMS = {

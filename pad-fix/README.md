@@ -60,7 +60,7 @@ gamepad_aim_assist_hip_low_power_scopes "0.0"
 gamepad_aim_assist_melee "0.0"
 ```
 
-**C. トグル（3項目）**
+**C. トグル（4項目）**
 ```
 gamepad_use_per_scope_sensitivity_scalars "1"   # これが1でないと A の 0.2 が効かない
 gamepad_custom_enabled "1"                      # 詳細感度(ALC)本体。これが1でないと A が使われない
@@ -68,9 +68,9 @@ joystick "0"
 disable_mouselook "0"
 ```
 
-**D. 詳細感度(ALC)の中身を最小化（16項目）**
+**D. 詳細感度(ALC)の中身を最小化（17項目）**
 ```
-gamepad_custom_curve "0.0"                      # 曲線なし（レンジ下限）
+gamepad_custom_curve "0.0"                      # 記述子の min=0（曲線なし側）
 gamepad_custom_assist_on "0"                    # ALC側のアシストも切る
 gamepad_custom_assist_style "0"
 gamepad_custom_ads_pitch "0.0"                  # ADS 旋回上限を最小へ
@@ -85,11 +85,11 @@ gamepad_custom_hip_turn_delay "0.0"
 gamepad_custom_hip_turn_pitch "0.0"
 gamepad_custom_hip_turn_time "0.0"
 gamepad_custom_hip_turn_yaw "0.0"
-gamepad_custom_deadzone_in "0.15"               # 既定=上限（遊びを残して微小入力の混入を抑える）
+gamepad_custom_deadzone_in "0.15"               # 既定値のまま（意図: 遊びを残す。効果は未検証）
 gamepad_custom_deadzone_out "0.02"
 ```
 
-値の根拠: cvar 記述子から実測したレンジ（`custom_*` は `[0, 既定]`、デッドゾーンだけ既定が上限）。
+値の根拠: cvar 記述子の min が 0 であること（実測）。上限は未記載の項目があるため、**0 かゲーム既定値のみ**を採用している（範囲外を書かない）。
 **パッドを使わない人向けの設定**です（パッドを使う人は D が効きすぎるので調整してください）。
 
 ## 重要: スカラーの下限は 0.2（実測）
@@ -106,7 +106,7 @@ gamepad_custom_deadzone_out "0.02"
 ## 触らないもの（わざと）
 
 ```
-gamepad_use_per_scope_ads_settings     0のまま
+gamepad_use_per_scope_ads_settings     触らない（実装は未操作＝既存値を維持。配布元の環境では0）
 gamepad_aim_speed_ads_0..7             -1 がセンチネル値（触ると別方向に変わる）
 gamepad_custom_pilot / _titan          内部の割り当てリスト
 mouse_sensitivity / mouse_zoomed_sensitivity_scalar_*   各自のエイム設定。無傷で維持
@@ -141,7 +141,7 @@ python pad_fix.py --unlock
 
 Even with **no controller connected**, gamepad-side values leak into the mouse sensitivity
 computation (shared input object, gate-free pad loop every frame, shared scalar table).
-Apply the 34 values above — both the per-scope toggle **and** Advanced Look Controls must be ON
+Apply the 36 values above — both the per-scope toggle **and** Advanced Look Controls must be ON
 (`gamepad_use_per_scope_sensitivity_scalars "1"`, `gamepad_custom_enabled "1"`), the scalars clamp
 to **0.2** (not 0.0) — then lock both files read-only and re-check after the next launch.
 `-nojoy` does not help. No game modification, no injection.
