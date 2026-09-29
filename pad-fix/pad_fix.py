@@ -152,32 +152,54 @@ def main():
 
     if mode == '--restore':
         manifest = load_manifest()
-        oldest = {}
-        for entry in manifest:                            # 記録順=古い順に走査
-            src = os.path.join(BACKUP, entry['backup'])
-            if os.path.exists(src):
-                oldest.setdefault(entry['origin'], src)
-        for source in sorted(glob.glob(os.path.join(BACKUP, '*.cfg'))):   # マニフェスト外の残り
-            name = os.path.basename(source)
-            known = any(e['backup'] == name for e in manifest)
-            if known:
-                continue
-            origin = os.path.join(SAVED, name.split('__', 1)[-1])
-            oldest.setdefault(origin, source)
-        earliest = oldest
+        seen_backups = set()
+        seen_origins = set()
+        problems = []
         count = 0
-        for origin, source in earliest.items():
+        # 1) マニフェストに記録された「初回適用前」を復元する（元パスごとに最初の世代だけ）
+        for entry in manifest:
+            name = entry['backup']
+            origin_key = entry['origin'].lower()
+            if name in seen_backups or origin_key in seen_origins:
+                continue
+            seen_backups.add(name)
+            seen_origins.add(origin_key)
+            origin = entry['origin']
+            src = os.path.join(BACKUP, name)
+            if not os.path.exists(src):
+                problems.append('初回バックアップが無い: %s（手動で復元してください）' % name)
+                continue
             if not os.path.exists(origin):
-                print('スキップ（元ファイルが無い）: %s' % origin)
+                problems.append('復元先が無い: %s' % origin)
                 continue
             set_lock(origin, False)
-            shutil.copyfile(source, origin)
+            shutil.copyfile(src, origin)
             set_lock(origin, False)
-            print('復元(原値): %s <- %s' % (origin, os.path.basename(source)))
+            print('復元(原値): %s <- %s' % (origin, name))
             count += 1
-        if not count:
+        # 2) マニフェスト外（旧形式）のバックアップ: 名前から復元先を探す
+        manifest_names = {e['backup'] for e in manifest}
+        for source in sorted(glob.glob(os.path.join(BACKUP, '*.cfg'))):
+            name = os.path.basename(source)
+            if name in manifest_names:
+                continue
+            target = name.split('__', 1)[-1]
+            hits = glob.glob(os.path.join(SAVED, '**', target), recursive=True)
+            if not hits:
+                problems.append('旧形式バックアップの復元先が見つからない: %s' % name)
+                continue
+            for origin in [hits[0]] if len(hits) == 1 else hits:
+                set_lock(origin, False)
+                shutil.copyfile(source, origin)
+                set_lock(origin, False)
+                print('復元(旧形式): %s <- %s' % (origin, name))
+                count += 1
+        for msg in problems:
+            print('WARNING: %s' % msg)
+        if not count and not problems:
             print('バックアップが無い（backup/ が空）')
-        return 0 if count else 1
+            return 1
+        return 1 if problems else 0
 
     if mode == '--unlock':
         for path, _ in files:
