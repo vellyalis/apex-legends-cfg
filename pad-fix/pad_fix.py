@@ -30,6 +30,8 @@ BACKUP = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backup')
 PATTERNS = ('gamepad_ads_advanced_sensitivity_scalar_', 'gamepad_aim_assist_')
 # 存在しなければ末尾に追記する固定行（無くても動くように明示）
 FORCE = {'joystick': '0', 'disable_mouselook': '0'}
+# profile.cfg のみ: これが ON(1) でないと下の 0.2 スカラーが使われない
+FORCE_PROFILE = {'gamepad_use_per_scope_sensitivity_scalars': '1'}
 
 READONLY = 0x01
 
@@ -69,12 +71,19 @@ def transform(path):
         if not name:
             continue
         seen.add(name)
+        if name == 'gamepad_use_per_scope_sensitivity_scalars' and value not in ('1', '1.0'):
+            lines[index] = '%s"1"' % line.split('"')[0]
+            changed.append((name, value, '1'))
+            continue
         if any(pattern in name for pattern in PATTERNS):
             new = minimize(value, name)
             if new != value:
                 lines[index] = '%s"%s"' % (line.split('"')[0], new)
                 changed.append((name, value, new))
-    for name, value in FORCE.items():
+    force = dict(FORCE)
+    if os.path.basename(path) == 'profile.cfg':
+        force.update(FORCE_PROFILE)
+    for name, value in force.items():
         if name not in seen:
             lines.append('%s "%s"' % (name, value))
             changed.append((name, '(なし)', value))

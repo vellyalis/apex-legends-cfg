@@ -43,10 +43,13 @@ gamepad_aim_assist_hip_low_power_scopes "0.0"
 gamepad_aim_assist_melee "0.0"
 joystick "0"
 disable_mouselook "0"
-gamepad_use_per_scope_sensitivity_scalars "0"
+gamepad_use_per_scope_sensitivity_scalars "1"
 ```
 
-**重要 — スカラーの下限は 0.2（実測）**: `gamepad_ads_advanced_sensitivity_scalar_*` に `0.0` を書いても
+**重要1 — `gamepad_use_per_scope_sensitivity_scalars` は `"1"`（ON）にする**
+OFF（0）だとズーム段ごとのスカラーが使われず、下の 0.2 が効きません（＝混入が残る）。
+
+**重要2 — スカラーの下限は 0.2（実測）**: `gamepad_ads_advanced_sensitivity_scalar_*` に `0.0` を書いても
 **ゲームが 0.2 にクランプして書き戻します**（実測: 全8段が 0.2 になった）。正しくは `"0.2"`
 （＝ゲーム内スライダーを全部左端にしたのと同じ値）。つまり**ゲーム内でスライダーを左端に揃えるだけ**でも最小化できます。
 
@@ -70,15 +73,22 @@ gamepad_aim_speed_ads_*   # -1 がセンチネル値。0 にすると別方向�
 - 効果の実感には個人差がある（混入量はズーム段・武器・設定で変わる）。**差を感じなければ戻してよい**
 - ゲームを改変しない・アンチチートに触れる操作は含まない（設定ファイル＝データのみ）
 
-## 根拠（このビルドの静的解析）
+## なぜこれで止まるのか（要点）
 
-| 事実 | 出典 |
-|---|---|
-| マウス感度の最終計算は `mouse_sensitivity × 共有定数 × テーブルから選ばれるスカラー`。その**スカラー源は共有ゲート状態で切り替わり**、パッド側スカラー（8要素）と**同型の構造を共有** | 逆アセンブル |
-| パッド側 look 処理（`0x1408A5350`、呼び出し元は唯一 `0x1409ABC97`）は**接続チェックなしで毎フレーム**共有状態を書く | 逆アセンブル |
-| 入力初期化 `0x1404BCA80` が raw mouse と XInput を**同一オブジェクト**に保持（+0x21C0 / +0x21B8） | 逆アセンブル |
-| `disable_mouselook` はマウス段のゲート条件 → 明示的に `0` で固定する | 同上 |
-| `joystick` の文字列は exe/同梱DLLに**存在しない**（静的に登録されたcvarではない）→ ゲーム自身が書くキーとしてのみ意味がある | 全文走査 |
+- マウスとパッドの入力は**エンジン内部で分離されていない**（同じ入力オブジェクトに載っている）
+- パッド側の処理は**接続チェックなしで毎フレーム**走り、共有の状態を書き換える
+- マウスの実効感度は**その共有状態から選ばれるテーブル**で決まる → パッド側スカラーが混入する
+- だから「パッド側スカラーを下限に固定」＋「`joystick 0` / `disable_mouselook 0` を明示」が最小化になる
+- 起動オプション `-nojoy` では防げない（`joystick` はパッド有効化ロジックでしか読まれない）
+
+## 触らないもの（わざと）
+
+```
+gamepad_custom_enabled            # 0のまま（ALC本体。ONにするとカーブ/デッドゾーンが有効化され悪化）
+gamepad_use_per_scope_ads_settings    # 0のまま
+gamepad_aim_speed_ads_0..7        # -1 がセンチネル値（触ると別方向に変わる）
+mouse_sensitivity / mouse_zoomed_sensitivity_scalar_*  # 各自のエイム設定。無傷で維持
+```
 
 ## English summary
 
