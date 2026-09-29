@@ -135,7 +135,13 @@ def main():
             print('ロック解除: %s' % path)
         return 0
 
+    if mode == '--apply' and len(files) < 2:
+        print('ERROR: profile.cfg と settings.cfg の両方が必要（片方しか見つからない）。')
+        print('       Apex を一度起動して設定ファイルを作ってから実行する。')
+        return 2
+
     total = 0
+    failed = False
     for path, wanted in files:
         lines, changed = transform(path, wanted)
         for name, old, new in changed:
@@ -143,19 +149,21 @@ def main():
         print('%s: 変更 %d 項目' % (os.path.basename(path), len(changed)))
         total += len(changed)
         if mode == '--apply':
+            backup(path)            # 変更が無くても必ずバックアップ（初回適用前の状態を保証する）
             if changed:
-                backup(path)
                 set_lock(path, False)
                 with open(path, 'w', encoding='utf-8', newline='\r\n') as handle:
                     handle.write('\n'.join(lines) + '\n')
-            else:
-                set_lock(path, False)   # 変更なしでもロック状態を確定させる
             set_lock(path, True)
-            print('  → ロック適用: %s（readonly=%s）' % (path, is_locked(path)))
+            if not is_locked(path):
+                print('  → ERROR: 読み取り専用にできなかった（権限を確認）: %s' % path)
+                failed = True
+            else:
+                print('  → ロック適用: %s' % path)
     print('合計 %d 項目（%s）' % (total, 'DRY RUN' if mode == '--dry' else mode))
     if mode == '--dry':
         print('※ 適用するには --apply（ゲームを終了してから）')
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == '__main__':
