@@ -20,6 +20,7 @@ import ctypes
 import glob
 import json
 import os
+import re
 import shutil
 import sys
 import time
@@ -113,6 +114,15 @@ def targets():
     return out
 
 
+def legacy_order(path):
+    """旧形式バックアップの並び: (時刻, 連番, 名前)。連番は同秒内の世代順"""
+    name = os.path.basename(path)
+    m = re.match(r'^(\d{8}-\d{6})(?:-(\d+))?__', name)
+    if m:
+        return (m.group(1), int(m.group(2) or 1), name)
+    return ('00000000-000000', 1, name)
+
+
 def load_manifest():
     """[{'backup':名前,'origin':元の絶対パス,'time':記録時刻}] の順序付きリスト"""
     if not os.path.exists(MANIFEST):
@@ -178,8 +188,10 @@ def main():
             print('復元(原値): %s <- %s' % (origin, name))
             count += 1
         # 2) マニフェスト外（旧形式）のバックアップ: 名前から復元先を探す
+        #    - 既に復元済みのファイルには触らない（新しい世代で上書きしない）
+        #    - 復元先が複数候補で特定できない場合は推測せず警告して失敗扱いにする
         manifest_names = {e['backup'] for e in manifest}
-        for source in sorted(glob.glob(os.path.join(BACKUP, '*.cfg'))):
+        for source in sorted(glob.glob(os.path.join(BACKUP, '*.cfg')), key=legacy_order):
             name = os.path.basename(source)
             if name in manifest_names:
                 continue
@@ -188,12 +200,19 @@ def main():
             if not hits:
                 problems.append('旧形式バックアップの復元先が見つからない: %s' % name)
                 continue
-            for origin in [hits[0]] if len(hits) == 1 else hits:
-                set_lock(origin, False)
-                shutil.copyfile(source, origin)
-                set_lock(origin, False)
-                print('復元(旧形式): %s <- %s' % (origin, name))
-                count += 1
+            fresh = [h for h in hits if h.lower() not in seen_origins]
+            if not fresh:
+                continue                       # 既にマニフェスト側で復元済み
+            if len(fresh) > 1:
+                problems.append('復元先を特定できない（同名が複数）: %s -> %s' % (name, fresh))
+                continue
+            origin = fresh[0]
+            set_lock(origin, False)
+            shutil.copyfile(source, origin)
+            set_lock(origin, False)
+            print('復元(旧形式): %s <- %s' % (origin, name))
+            seen_origins.add(origin.lower())
+            count += 1
         for msg in problems:
             print('WARNING: %s' % msg)
         if not count and not problems:
