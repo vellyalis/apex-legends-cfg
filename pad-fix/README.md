@@ -2,8 +2,13 @@
 
 ## TL;DR
 
-パッドを**挿していなくても**、パッド側の設定値が**マウス感度の計算に混入します**。
-下の**36項目**（profile 34＋settings 2）を適用すると混入項を最小化できます（ゲーム改造なし・注入なし）。
+パッドを**挿していなくても**、パッド側の処理は毎フレーム走り、**マウス感度の計算と共有の状態**を書き換えます。
+下の**36項目**（profile 34＋settings 2）でパッド側の値を最小化しておくのが安全側の対処です（ゲーム改造なし・注入なし）。
+
+**根拠（すべて静的解析）**: ①入力初期化が raw mouse と XInput を**同一オブジェクト**に保持している
+②パッド段は**接続チェックなしで毎フレーム**共有状態を書く ③マウスの実効感度は**その共有状態のゲートから選ばれる
+テーブル**で決まり、パッド側スカラーと同型の構造を共有している。
+※ 統計的な体感差の検証は交絡により保留（断定はせず、構造解析を根拠にした安全側の対処）。
 
 **要点**: パッド側の数値を最小にするには「**倍率ごとのスカラーを使うトグル=1**」＋「**詳細感度(ALC)本体=1**」の両方が必要です
 （どちらかが OFF だと、せっかく最小化した値が使われません）。
@@ -129,18 +134,21 @@ python pad_fix.py --unlock
 - 効果の実感には個人差がある（混入量はズーム段・武器・設定で変わる）。**差を感じなければ戻してよい**
 - ゲームを改変しない・アンチチートに触れる操作は含まない（設定ファイルの数値のみ）
 
-## なぜこれで止まるのか（要点）
+## なぜこれが安全側なのか（要点）
 
 - マウスとパッドの入力は**エンジン内部で分離されていない**（同じ入力オブジェクトに載っている）
 - パッド側の処理は**接続チェックなしで毎フレーム**走り、共有の状態を書き換える
-- マウスの実効感度は**その共有状態から選ばれるテーブル**で決まる → パッド側スカラーが混入する
-- 混入するスカラーは「倍率ごとのスカラー」で、**per-scope トグルと ALC 本体の両方が ON のときだけ適用される**
+- マウスの実効感度は**その共有状態から選ばれるテーブル**で決まる（パッド側スカラーと同型の構造）
+  → パッド側の値が小さいほど、共有状態に載る量も小さくなる（安全側）
+- 関与するスカラーは「倍率ごとのスカラー」で、**per-scope トグルと ALC 本体の両方が ON のときだけ適用される**
   → だから「両トグル ON ＋ 値を下限」が最小化になる
 
 ## English summary
 
-Even with **no controller connected**, gamepad-side values leak into the mouse sensitivity
-computation (shared input object, gate-free pad loop every frame, shared scalar table).
+Even with **no controller connected**, the gamepad path runs every frame and writes the same shared
+state the mouse sensitivity computation reads (same input object, gate-free pad loop, shared scalar table).
+The fix below minimizes the gamepad-side values as a safety measure (structural evidence; statistical
+feel-testing is inconclusive).
 Apply the 36 values above — both the per-scope toggle **and** Advanced Look Controls must be ON
 (`gamepad_use_per_scope_sensitivity_scalars "1"`, `gamepad_custom_enabled "1"`), the scalars clamp
 to **0.2** (not 0.0) — then lock both files read-only and re-check after the next launch.
