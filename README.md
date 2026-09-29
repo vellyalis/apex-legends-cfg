@@ -6,7 +6,7 @@ Apex Legends（EA app版）の実行ファイル `r5apex_dx12.exe` を**静的�
 
 - 対象: `v3.0.1.28` / build `R5pc_r5-301_J28_CL11570498`
 - EXE: `r5apex_dx12.exe` sha256 `8bacf98c9409352b198ece7800a09141585a95eaf6f9dc003c0f6c1114ca3825`
-- 作り方の証跡は `notes/` と `tools/` に全て同梱（RVAs/ハッシュ/抽出結果）
+- 作り方の証拠は `tools/` に同梱（RVAs/ハッシュ/抽出結果）
 
 ## 収録物
 
@@ -18,7 +18,6 @@ Apex Legends（EA app版）の実行ファイル `r5apex_dx12.exe` を**静的�
 | `configs/videoconfig.txt` | **43キー** — コメント付き（読み取り専用で使う前提） |
 | `configs/VIDEOCONFIG-GUIDE.md` | videoconfig 全キーの解説表（exe実測46キーとの突合つき） |
 | `configs/CVAR-GUIDE.md` / `configs/cvar-ledger.tsv` | cvar 台帳 **3,772件**（機械可読＋日本語ガイド） |
-| `notes/` | 解析ノート（cvar回収手順・videoconfig・ルール調査の記録） |
 | `tools/` | 解析スクリプト（PE走査・キー抽出・cfg生成。再現用。※ゲームへの注入・アタッチ・計測ツールは含まない） |
 | `evidence/rules/` | ALGS ルールブックの config 記述スキャン（Year 2 / 5 / 6） |
 
