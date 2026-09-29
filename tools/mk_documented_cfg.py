@@ -248,7 +248,7 @@ GUIDE_TAIL = """
 
 ---
 
-解析の詳細・生データ: `G:\\apex-analysis\\notes\\cfg-audit.md` と `evidence/audit3/`。
+解析の詳細・生データ: `notes\\cfg-audit.md` と `evidence/audit3/`。
 判定は「存在するか（登録スタブ）」「読まれるか（ハンドル参照）」「既定値/範囲/flags」まで。
 **値の因果（FPS が何%上がる等）は測っていない**ので、そこは各自で A/B してほしい。
 """

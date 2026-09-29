@@ -19,16 +19,16 @@ VAL_RE = re.compile(r'\s*"setting\.([A-Za-z0-9_]+)"\s*"([^"]*)"')
 T = {
  'last_display_width':   (None, 'display', '内部値: 直近の画面幅。ゲームが書く。触らない'),
  'last_display_height':  (None, 'display', '内部値: 直近の画面高。触らない'),
- 'defaultres':           (None, 'display', '解像度の幅（メニュー「解像度」）。触らない'),
- 'defaultresheight':     (None, 'display', '解像度の高さ。触らない'),
- 'fullscreen':           (None, 'display', '1=全画面 / 0=ウィンドウ。メニューの表示モード。触らない'),
- 'nowindowborder':       (None, 'display', 'ボーダーレス指定。メニュー側。触らない'),
+ 'defaultres':           (None, 'display', '★解像度の幅。**自分の環境・好みに合わせて変更**（例 1920x1080 / 1728x1080ストレッチ）。人によって最適が違うのでこの値をそのまま使わなくてよい'),
+ 'defaultresheight':     (None, 'display', '★解像度の高さ。**自分の環境・好みに合わせて変更**（1080 など）'),
+ 'fullscreen':           (None, 'display', '1=全画面 / 0=ウィンドウ。**自分の好みで**（VRR/入力遅延を考えるなら全画面）'),
+ 'nowindowborder':       (None, 'display', 'ボーダーレス指定。**自分の好みで**（通常は1のまま）'),
  'configversion':        (None, 'display', 'videoconfigの形式バージョン。絶対に触らない'),
  'sound_volume':         (None, 'audio',   '音量。既定1.0。足音は視認性と同じ「情報」なので下げない'),
 
- 'stream_memory':        ('6000000', 'visibility', '★推奨変更（現行300000/既定298000）: テクスチャストリーミング予算(KB)。16GB VRAMなら6GB級でよい。上げる=遠く/近くのテクスチャが鮮明（負荷: VRAM消費増、読み込みスパイクに注意）'),
+ 'stream_memory':        ('3000000', 'visibility', '★推奨値（既定298000）: テクスチャストリーミング予算(KB)。**2〜3GBがスイートスポット**（4GB以上は負荷が増えやすい。増やすなら1段ずつ検証）。上げる=遠くのテクスチャが鮮明／下げる=軽いがボケる（スタールはフレームタイム＝AIM感に効く）'),
  'r_lod_switch_scale':   ('1.000000', 'visibility', '★推奨変更（現行0.600000/既定1）: 遠距離モデルのLOD切替距離。1.0=既定で遠くまで高精度モデル。0.6=早く低ポリに落ちる（敵の見分けが悪化）。1超でさらに遠くまで高精度（負荷増）'),
- 'mat_forceaniso':       ('8', 'visibility', '★推奨変更（現行2/既定2）: 異方性フィルタ。斜め視点の床/壁テクスチャのボケが減る（2/4/8/16）。16で最大、負荷は軽微'),
+ 'mat_forceaniso':       ('4', 'visual', '異方性フィルタ。**推奨帯は2〜4x**（既定2。好みで16xまで、負荷は軽微）。斜め視点の床・壁のボケが減る＝遠くの輪郭が読みやすい'),
  'ssao_enabled':         ('0', 'visibility', '★推奨追加（既定1・現行ファイルに無し=既定1）: 環境遮蔽。切ると暗部の「黒潰れ/エッジの暗がり」が減り、暗所の敵が見やすい。メニュー「アンビエントオクルージョン」相当'),
  'ssao_quality':         (None, 'visibility', 'AOの品質。既定3 / 現行0（最も軽い側）。ssao_enabled=0なら無関係'),
  'gamma':                (None, 'visibility', '画面の明るさ（メニュー「明るさ」スライダー相当。現行0.700000）。暗所を明るくしたい場合はメニューで上げるのが安全（ここを直接いじると読み取り専用化と衝突しやすい）'),
@@ -58,12 +58,12 @@ T = {
  'cl_particle_fallback_base': (None, 'effects', '粒子の自動間引き(base)。既定0 / 現行3（プリセット由来）。方向性が非公開のため触らない'),
  'cl_particle_fallback_multiplier': (None, 'effects', '粒子の自動間引き(multiplier)。既定1 / 現行2。触らない'),
 
- 'r_decals':             (None, 'decals', '弾痕/デカールの上限。既定256 / 現行0（0=残らない）。0は負荷減だが「弾がどこに当たったか」の視覚情報も消える。1以上にすると命中確認が視覚でも取れる'),
+ 'r_decals':             ('128', 'decals', '弾痕/デカールの上限。既定256。★128=命中確認の視覚情報（弾痕/血）を残しつつ軽い。0にすると消える（負荷は最小）'),
  'r_createmodeldecals':  (None, 'decals', 'モデルへのデカール(血/弾痕)生成。既定1 / 現行0。同上のトレードオフ'),
 
  'cl_gib_allow':         (None, 'gore', 'ギブ(肉片)表示。既定1 / 現行0。0=撃破時の肉片が飛ばない（視界のノイズ減・負荷減）'),
  'cl_ragdoll_maxcount':  (None, 'gore', '死体(ラグドール)数。既定8 / 現行0（0=死体なし。視界がクリア・負荷減）'),
- 'cl_ragdoll_self_collision': (None, 'gore', '死体の自己衝突。既定1 / 現行1。ラグドール0なら無関係'),
+ 'cl_ragdoll_self_collision': ('0', 'gore', '死体の自己衝突。既定1。★0（死体を出さない設定なので実質無関係だが明示）'),
 
  'dvs_enable':           (None, 'perf', '動的解像度(アダプティブリゾリューション)。既定1 / 現行0。0=常に固定解像度（解像度が勝手に下がってボケるのを防ぐ）。視認性目的なら0推奨のまま'),
  'dvs_gpuframetime_min': (None, 'perf', '動的解像度の下限フレームタイム(µs)。既定15000 / 現行15000。dvs_enable=0なら無関係'),
@@ -120,7 +120,18 @@ def main():
              'perf': 'パフォーマンス',
              'audio': '音'}
 
-    lines = ['"VideoConfig"', '{']
+    lines = ['"VideoConfig"', '{',
+             '',
+             '	// ===== いじり方（このファイルだけで完結） =====',
+             '	// 1) ゲームを終了してから編集する（起動中は上書きされる）',
+             '	// 2) 読み取り専用属性だと保存できない → 属性を外す: attrib -R videoconfig.txt',
+             '	// 3) 1回に1項目だけ変えて起動し、差を確認する（変わらない項目は戻す）',
+             '	// 4) 編集後は読み取り専用に戻す: attrib +R videoconfig.txt',
+             '	//    （戻さないとゲームが終了時にメニュー値で書き戻し、コメントも消える）',
+             '	// 5) 数値の意味・既定値は各項目の上のコメント行に書いてある',
+	//   ※映像の個別設定はこのファイルが管理元（autoexec.cfg には重複して書いていない）',
+             '	// 凡例: ★=推奨値の指定あり（値が現行と同じ場合もある。理由はコメント参照） / 既定=エンジン/メニュー基準値 / 現行=配布時点の値',
+             '']
     for g in order:
         gk = [k for k in keys if T[k.split('.', 1)[1]][1] == g]
         if not gk:
@@ -144,31 +155,7 @@ def main():
     body = '\n'.join(lines)
     open(os.path.join(outdir, 'videoconfig.txt'), 'w', encoding='utf-8', newline='\r\n').write(body)
 
-    # ガイド
-    doc = ['# videoconfig.txt（実測ベース）— 各項目の意味と推奨値', '',
-           f'- 正規キー: exe 内の `setting.*` 文字列 **{len(found)}本**（このファイルに載せたのは {len(keys)}本）',
-           '- 既定値は cvar 台帳（同名cvar・大文字小文字を無視して突合）から取得。`—` は cvar が無い（設定マネージャ側のキー）',
-           '- ★ = 推奨変更。それ以外は現行値のまま（無闇に変えない）', '',
-           '| key | 推奨 | 既定(cvar) | 現行 | グループ |', '|---|---|---|---|---|']
-    for k in keys:
-        n = k.split('.', 1)[1]
-        rec, g, _ = T[n]
-        doc.append(f"| `{k}` | {rec or '(現行維持)'} | {led[n][1] if led.get(n) else '—'} | {cur.get(k, '(無し)')} | {g} |")
-    doc += ['', '## 書かなかったキー', '']
-    for k, why in NOT_WRITTEN.items():
-        doc.append(f'- `setting.{k}`: {why}')
-    doc += ['', '## 使い方（読み取り専用が前提）', '',
-            '1. `videoconfig.txt` を `%USERPROFILE%\\Saved Games\\Respawn\\Apex\\local\\` にコピー（**ゲーム終了中に**）',
-            '2. 右クリック → プロパティ → 「読み取り専用」にチェック（または `attrib +R videoconfig.txt`）',
-            '3. ゲーム起動 → メニューの映像設定がこちらの値で固定される（メニューで変更しても保存されない）',
-            '',
-            '**理由**: `videoconfig.txt` はゲーム自身が上書きするファイル。読み取り専用にしないと、次回終了時にメニューの値で書き戻され、コメントも消える。',
-            '',
-            '**解除/戻し方**: `attrib -R videoconfig.txt` → ゲームを起動して映像設定を1回変更する（またはファイルを削除して起動＝既定で作り直される）。',
-            '',
-            '**注意**: 読み取り専用中はメニューからの解像度/明るさ等の変更も保存されない。変えたい時は一度属性を外す。',
-            '']
-    open(os.path.join(outdir, 'VIDEOCONFIG-GUIDE.md'), 'w', encoding='utf-8').write('\n'.join(doc) + '\n')
+    # ガイドは生成しない（いじり方はファイル内コメントに統合）
 
     print(f'exe keys={len(found)} emitted={len(keys)} '
           f'changed={sum(1 for k in keys if T[k.split(".",1)[1]][0])} -> {outdir}/videoconfig.txt')
