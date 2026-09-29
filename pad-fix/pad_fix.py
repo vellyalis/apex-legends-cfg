@@ -42,8 +42,30 @@ AIM_ASSIST = {name: '0.0' for name in (
     'gamepad_aim_assist_ads_high_power_scopes', 'gamepad_aim_assist_ads_low_power_scopes',
     'gamepad_aim_assist_hip_high_power_scopes', 'gamepad_aim_assist_hip_low_power_scopes',
     'gamepad_aim_assist_melee')}
+# 詳細感度(ALC)本体を ON にした上で、パッド側の寄与を最小化する値
+# （レンジは cvar 記述子から実測: custom_* は [0, 既定]、deadzone のみ既定が上限）
+ALC_ON = {'gamepad_custom_enabled': '1'}
+ALC_MIN = {
+    'gamepad_custom_curve': '0.0',            # 下限=曲線なし（最も素直）
+    'gamepad_custom_assist_on': '0',          # ALC側のアシストも切る
+    'gamepad_custom_assist_style': '0',
+    'gamepad_custom_ads_pitch': '0.0',        # ADS 旋回上限を最小へ
+    'gamepad_custom_ads_yaw': '0.0',
+    'gamepad_custom_ads_turn_delay': '0.0',
+    'gamepad_custom_ads_turn_pitch': '0.0',
+    'gamepad_custom_ads_turn_time': '0.0',
+    'gamepad_custom_ads_turn_yaw': '0.0',
+    'gamepad_custom_hip_pitch': '0.0',        # ヒップ 旋回上限を最小へ
+    'gamepad_custom_hip_yaw': '0.0',
+    'gamepad_custom_hip_turn_delay': '0.0',
+    'gamepad_custom_hip_turn_pitch': '0.0',
+    'gamepad_custom_hip_turn_time': '0.0',
+    'gamepad_custom_hip_turn_yaw': '0.0',
+    'gamepad_custom_deadzone_in': '0.15',     # 既定=上限（遊びを残して微小入力の混入を抑える）
+    'gamepad_custom_deadzone_out': '0.02',
+}
 PROFILE_ITEMS = {
-    **SCALARS, **AIM_ASSIST,
+    **SCALARS, **AIM_ASSIST, **ALC_ON, **ALC_MIN,
     'gamepad_use_per_scope_sensitivity_scalars': '1',   # これが 1 でないと上の 0.2 が効かない
     'joystick': '0',
     'disable_mouselook': '0',
