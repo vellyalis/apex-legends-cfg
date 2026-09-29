@@ -16,8 +16,7 @@ Apex Legends（EA app版）の実行ファイル `r5apex_dx12.exe` を**静的�
 | `configs/ranked/autoexec.cfg` | **105行** — full から「情報・挙動に触る6行」だけ除外（足音/ジップ音距離・フォグ・パーティクル倍速・切替クールダウン） |
 | `configs/low-risk/autoexec.cfg` | **35行** — ゲーム自身がメニューから書く値のみ（＋`fps_max`） |
 | `configs/videoconfig.txt` | **43キー** — コメント付き（読み取り専用で使う前提） |
-| `configs/input/input-block.cfg` | マウス/パッド入力の整理ブロック（autoexec に貼る用。パッド→マウスの経路が無いことの実測つき） |
-| `configs/VIDEOCONFIG-GUIDE.md` | videoconfig 全キーの解説表（exe実測46キーとの突合つき） |
+| `pad-fix/` | **パッド設定がマウス感度に混入する問題の対処**（手順書＋自動適用 `pad_fix.py`。混入機構は逆アセンブルで確認済み） |
 | `configs/CVAR-GUIDE.md` / `configs/cvar-ledger.tsv` | cvar 台帳 **3,772件**（機械可読＋日本語ガイド） |
 | `tools/` | 解析スクリプト（PE走査・キー抽出・cfg生成。再現用。※ゲームへの注入・アタッチ・計測ツールは含まない） |
 | `evidence/rules/` | ALGS ルールブックの config 記述スキャン（Year 2 / 5 / 6） |
