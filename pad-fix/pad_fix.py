@@ -200,13 +200,13 @@ def main():
             if not hits:
                 problems.append('旧形式バックアップの復元先が見つからない: %s' % name)
                 continue
-            fresh = [h for h in hits if h.lower() not in seen_origins]
-            if not fresh:
-                continue                       # 既にマニフェスト側で復元済み
-            if len(fresh) > 1:
-                problems.append('復元先を特定できない（同名が複数）: %s -> %s' % (name, fresh))
+            if len(hits) > 1:
+                # 出所不明の旧バックアップは推測で戻さない（1件でも誤爆を防ぐ）
+                problems.append('旧形式バックアップの復元先が一意でない（候補%d件）: %s' % (len(hits), name))
                 continue
-            origin = fresh[0]
+            origin = hits[0]
+            if origin.lower() in seen_origins:
+                continue                       # 既にマニフェスト側で復元済み
             set_lock(origin, False)
             shutil.copyfile(source, origin)
             set_lock(origin, False)
