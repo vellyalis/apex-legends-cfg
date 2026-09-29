@@ -1,0 +1,9 @@
+# ALGSルールブックの config 関連記述スキャン（2026-09-28 取得）
+
+## Year2: {'autoexec': 1, 'videoconfig': 1, 'local.cfg': 1, 'fps_max': 1, 'letterbox': 2, 'csm_enabled': 1, 'reticle': 1, 'unfair advantage': 0, 'exploits': 0}
+   QUOTE: Competitors may only add or edit the following Game files and configuration: ○ local.cfg ○ autoexec.cfg ○ videoconfig.txt ○ Launch Options ● Competitors may only add or edit the following in the configuration items specified above: ○ fps_max ○ mat_letterbox_aspect_goal ○ mat_letterbox_aspect_threshold ○ "setting.csm_enabled" "0" ○ custom reticles ● Competitors must use the same input device for the entirety of a match series. Competitors may switch input devices prior to the start of their next series. ○ Competito
+   QUOTE: Competitors may only add or edit the following in the configuration items specified above: ○ fps_max ○ mat_letterbox_aspect_goal ○ mat_letterbox_aspect_threshold ○ "setting.csm_enabled" "0" ○ custom reticles ● Competitors must use the same input device for the entirety of a match series. Competitors may switch input devices prior to the start of their next series. ○ Competitors who elect to change their input device must inform a Tournament Official that they have done so, and what their new input device is. ● The 
+
+## Year5: {'autoexec': 0, 'videoconfig': 0, 'local.cfg': 0, 'fps_max': 0, 'letterbox': 0, 'csm_enabled': 0, 'reticle': 0, 'unfair advantage': 0, 'exploits': 3}
+
+## Year6: {'autoexec': 0, 'videoconfig': 0, 'local.cfg': 0, 'fps_max': 0, 'letterbox': 0, 'csm_enabled': 0, 'reticle': 0, 'unfair advantage': 0, 'exploits': 3}
